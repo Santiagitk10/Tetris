@@ -1,0 +1,18 @@
+/* CSS Reset  */
+*,  *::after, *::before {
+    box-sizing: border-box;
+}
+/* CSS Reset  */
+
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+canvas {
+    /* border: 1px solid black; */
+    width: 500px;
+    height: 700px;
+}
