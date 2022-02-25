@@ -1,6 +1,11 @@
 
+// setInterval(() => {
+//     tetrimino.moveDown();
+// },200);
+
 const boardMargin= 10;
 let regulador_valocidad_teclaOprimida = 0;
+let lineas_hechas = 0
 
 function setup(){
     createCanvas();
@@ -54,17 +59,61 @@ class Board{
         for(let row = 0; row < this.rows; row++){
             this.memory[row] = [];
             for(let column = 0; column < this.columns; column++){
-                this.memory[row].push = ' ';
+                this.memory[row].push('');
             }
         }
     }
 
     set storeTetrimino(tet){
         for(const posMino of tet.mapaTablero){
-            this.memory[parseInt(posMino.x/25)][parseInt(posMino.y/25)] = tet.name;
+            if(posMino.y < 35){
+                //juego ha terminado
+                board = new Board();
+                tetrimino = new Tetrimino();
+                lineas_hechas = 0;
+            }
+            this.memory[parseInt(posMino.y/25-1)][parseInt(posMino.x/25)] = tet.name;
         }
+        this.selectHorizontalLinesToErase();
+    }
+
+    selectHorizontalLinesToErase(){
+        let lineas = [];
+        for (let fila = this.rows-1; fila >= 0; fila--) {
+            let agregar = true;
+            for (let columna = 0; columna < this.columns; columna++) {
+                if (!this.memory[fila][columna]) {
+                    agregar = false;
+                    break;
+                }
+            }
+            if (agregar) {
+                lineas.push(fila);
+            }
+        }
+
+        this.eraseHorizontalLines(lineas);
+    }
+
+    eraseHorizontalLines(lineas){
+        lineas_hechas += lineas.length;
+        for (const linea of lineas) {
+            for (let fila = linea; fila >= 0; fila--) {
+                for (let columna = 0; columna < this.columns; columna++) {
+                    if (fila == 0) {
+                        this.memory[fila][columna] = "";
+                        continue;
+                    }
+                    this.memory[fila][columna] =
+                        this.memory[fila -1][columna];
+                }
+            }
+        }
+
         console.log(this.memory)
     }
+
+
 
     coordenada(x,y){
         return createVector(x,y).mult(this.side).add(this.position);
@@ -85,6 +134,22 @@ class Board{
             }
         }
         pop()
+        this.paintStoredMinos();
+    }
+
+    paintStoredMinos(){
+        push();
+        for(let column = 0; column < this.columns; column++){
+            for(let row = 0; row < this.rows; row++){
+                let nombreMino = this.memory[row][column];
+                if(nombreMino){
+                    fill(baseTetriminos[nombreMino].color);
+                    Tetrimino.paintMino(this.coordenada(column, row));
+                }
+            
+            }
+        }
+        pop();
     }
 
 
@@ -191,7 +256,7 @@ class Tetrimino{
 
     moveRight(){
         this.position.x++;
-        let isOut = !this.isInsideBoard;
+        let isOut = !this.isInsideBoard || this.colisionConMinosAlmacenados;
         if(isOut){
             this.moveLeft();
         }
@@ -199,7 +264,7 @@ class Tetrimino{
 
     moveLeft(){
         this.position.x--;
-        let isOut = !this.isInsideBoard;
+        let isOut = !this.isInsideBoard || this.colisionConMinosAlmacenados;;
         if(isOut){
             this.moveRight();
         }
@@ -212,7 +277,7 @@ class Tetrimino{
 
     moveDown(){
         this.position.y++;
-        let isOut = !this.isInsideBoard;
+        let isOut = !this.isInsideBoard || this.colisionConMinosAlmacenados;;
         if(isOut){
             this.moveUp();
             board.storeTetrimino = this;
@@ -225,7 +290,7 @@ class Tetrimino{
         for(const posMin of this.mapa){
             posMin.set(posMin.y,-posMin.x)
         }
-        let isOut = !this.isInsideBoard;
+        let isOut = !this.isInsideBoard || this.colisionConMinosAlmacenados;;
         if(isOut){
             this.undoRotate();
         }
@@ -254,27 +319,41 @@ class Tetrimino{
         return true;
     }
 
+    get colisionConMinosAlmacenados(){
+        for(const pmino of this.mapaTablero){
+            if(board.memory[parseInt(pmino.y/25-1)][parseInt(pmino.x/25)]){
+                return true 
+            }
+        }
+
+        return false;
+    }
+
     dibujar(){
         push();
         fill(this.color);
         for(const posMino of this.mapaTablero){
-            rect(posMino.x,posMino.y,board.side)
-            push();
-            noStroke();
-            fill(255,255,255,80)
-            beginShape();
-            vertex(posMino.x,posMino.y);
-            vertex(posMino.x + board.side,posMino.y);
-            vertex(posMino.x + board.side,posMino.y +board.side);
-            endShape(CLOSE);
-            beginShape();
-            fill(0,0,0,80)
-            vertex(posMino.x,posMino.y);
-            vertex(posMino.x,posMino.y + board.side);
-            vertex(posMino.x + board.side,posMino.y +board.side);
-            endShape(CLOSE);
-            pop();
+            Tetrimino.paintMino(posMino);
         }
+        pop();
+    }
+
+     static paintMino(posMino){
+        rect(posMino.x,posMino.y,board.side)
+        push();
+        noStroke();
+        fill(255,255,255,80)
+        beginShape();
+        vertex(posMino.x,posMino.y);
+        vertex(posMino.x + board.side,posMino.y);
+        vertex(posMino.x + board.side,posMino.y +board.side);
+        endShape(CLOSE);
+        beginShape();
+        fill(0,0,0,80)
+        vertex(posMino.x,posMino.y);
+        vertex(posMino.x,posMino.y + board.side);
+        vertex(posMino.x + board.side,posMino.y +board.side);
+        endShape(CLOSE);
         pop();
     }
 }
